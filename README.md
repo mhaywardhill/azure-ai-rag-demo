@@ -1,198 +1,220 @@
 # Azure AI RAG Demo
 
-This project demonstrates how to use Azure AI Studio with your own data (Retrieval-Augmented Generation - RAG).
+[![Azure](https://img.shields.io/badge/Azure-AI%20Foundry-0078D4?logo=microsoft-azure)](https://ai.azure.com)
+[![Bicep](https://img.shields.io/badge/IaC-Bicep-orange)](https://learn.microsoft.com/azure/azure-resource-manager/bicep/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A production-ready demonstration of **Retrieval-Augmented Generation (RAG)** using Azure AI Foundry, Azure OpenAI, and Azure AI Search. Deploy your own AI-powered chat experience that answers questions based on your documents.
+
+![Architecture](https://learn.microsoft.com/azure/search/media/retrieval-augmented-generation-overview/architecture-diagram.png)
+
+---
 
 ## Overview
 
-This demo shows how to:
-- Create Azure AI resources (AI Hub, AI Project, Azure OpenAI, Azure AI Search)
-- Upload and index your own data
-- Use RAG (Retrieval-Augmented Generation) to ground AI responses in your data
-- Build a chat experience that answers questions based on your documents
+This project provides infrastructure-as-code (Bicep) and automation scripts to:
+
+- Deploy a complete Azure AI environment with a single command
+- Automatically upload and index your PDF documents
+- Create vector embeddings for semantic search
+- Enable RAG-powered chat using GPT-4o grounded in your data
 
 ## Prerequisites
 
-- Azure subscription with access to Azure OpenAI
-- Azure CLI installed
+| Requirement | Description |
+|-------------|-------------|
+| **Azure Subscription** | With access to Azure OpenAI ([Request access](https://aka.ms/oai/access)) |
+| **Azure CLI** | Version 2.50+ ([Install](https://learn.microsoft.com/cli/azure/install-azure-cli)) |
+| **Permissions** | Contributor role on the subscription |
 
-## Deployment Instructions
+---
 
-### Step 1: Login to Azure
+## Quick Start
+
+### 1. Clone and Configure
+
+```bash
+git clone https://github.com/mhaywardhill/azure-ai-rag-demo.git
+cd azure-ai-rag-demo
+```
+
+### 2. Login to Azure
 
 ```bash
 az login --tenant <tenant-id> --use-device-code
 ```
 
-Replace `<tenant-id>` with your Azure tenant ID.
-
-### Step 2: Set Environment Variables
-
-Configure the deployment by setting these environment variables:
+### 3. Set Environment Variables
 
 ```bash
-# Required: Set resource group name and location
 export RESOURCE_GROUP="rg-ai-rag-demo"
 export LOCATION="swedencentral"
 ```
 
-### Step 3: Create Resource Group
+### 4. Deploy Infrastructure
 
 ```bash
+# Create resource group
 az group create --name $RESOURCE_GROUP --location $LOCATION
-```
 
-### Step 4: Deploy Infrastructure
-
-```bash
+# Deploy all Azure resources
 az deployment group create \
     --resource-group $RESOURCE_GROUP \
     --template-file infra/main.bicep \
     --parameters infra/main.bicepparam
 ```
 
-### Step 5: Get Deployment Outputs
-
-After deployment, retrieve the resource names:
-
-```bash
-# Get all deployment outputs
-az deployment group show \
-    --resource-group $RESOURCE_GROUP \
-    --name <deployment-name> \
-    --query properties.outputs
-
-# Or get specific values
-export OPENAI_ENDPOINT=$(az deployment group show \
-    --resource-group $RESOURCE_GROUP \
-    --name <deployment-name> \
-    --query properties.outputs.openAiEndpoint.value -o tsv)
-
-export SEARCH_ENDPOINT=$(az deployment group show \
-    --resource-group $RESOURCE_GROUP \
-    --name <deployment-name> \
-    --query properties.outputs.searchEndpoint.value -o tsv)
-
-export AI_PROJECT_NAME=$(az deployment group show \
-    --resource-group $RESOURCE_GROUP \
-    --name <deployment-name> \
-    --query properties.outputs.aiProjectName.value -o tsv)
-```
-
-### Alternative: Use the Deploy Script
-
-You can also use the provided deployment script which handles all steps:
-
-```bash
-# Set variables (optional - defaults will be used if not set)
-export RESOURCE_GROUP="rg-ai-rag-demo"
-export LOCATION="swedencentral"
-
-# Run deployment
-./deploy.sh
-```
-
-## Resources Created
-
-The deployment creates the following Azure resources:
-
-| Resource | Description |
-|----------|-------------|
-| Azure AI Hub | Central hub for AI projects |
-| Azure AI Project | Your working project |
-| Azure OpenAI Service | With GPT-4o and text-embedding-ada-002 models |
-| Azure AI Search | For vector indexing your data |
-| Storage Account | For storing your documents |
-| Key Vault | For secrets management |
-| Application Insights | For monitoring |
-| Log Analytics Workspace | For logs |
-
-## Using the Demo
-
-### Option 1: Automated Data Upload & Index Creation
-
-After deployment, run the data setup script to automatically:
-- Upload PDF files from the `data/` folder to Azure Storage
-- Create a vector search index with embeddings
-- Configure and run the indexer
+### 5. Upload Data and Create Index
 
 ```bash
 ./setup-data.sh
 ```
 
-The deploy script will prompt you to run this automatically after infrastructure deployment.
+> **💡 Tip:** Place your PDF files in the `data/` folder before running the setup script.
 
-### Option 2: Manual Setup via Azure AI Studio
+---
 
-1. Go to [Azure AI Studio](https://ai.azure.com)
+## Architecture
+
+The deployment creates the following Azure resources:
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                        Resource Group                          │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │  Azure AI    │    │    Azure     │    │   Azure AI   │      │
+│  │     Hub      │───>│    OpenAI    │    │    Search    │      │
+│  └──────────────┘    │   (GPT-4o)   │    │   (Vector)   │      │
+│         |            └──────────────┘    └──────────────┘      │
+│         v                                       ^              │
+│  ┌──────────────┐                               |              │
+│  │  AI Project  │-------------------------------+              │
+│  └──────────────┘                                              │
+│                                                                │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │   Storage    │    │  Key Vault   │    │ App Insights │      │
+│  │   Account    │    │              │    │              │      │
+│  └──────────────┘    └──────────────┘    └──────────────┘      │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+| Resource | Purpose |
+|----------|---------|
+| **Azure AI Hub** | Central management for AI projects and connections |
+| **Azure AI Project** | Workspace for building and testing AI solutions |
+| **Azure OpenAI** | GPT-4o for chat, text-embedding-ada-002 for embeddings |
+| **Azure AI Search** | Vector index for semantic document search |
+| **Storage Account** | Document storage for PDFs |
+| **Key Vault** | Secure secrets management |
+| **Application Insights** | Monitoring and diagnostics |
+
+---
+
+## Using the Demo
+
+### Test in Azure AI Foundry Playground
+
+1. Navigate to [Azure AI Foundry](https://ai.azure.com)
 2. Select your project
-3. Go to **Data + indexes** > **New index**
-4. Upload your data files
-5. Configure the embedding model (text-embedding-ada-002)
-6. Wait for indexing to complete
+3. Go to **Playground** → **Chat**
+4. Click **Add your data** → Select `rag-index`
+5. Start chatting with your documents!
 
-### Test in Playground
+### Example Questions
 
-1. In Azure AI Studio, go to **Playground** > **Chat**
-2. Click **Add your data**
-3. Select your index: `rag-index`
-4. Start asking questions about your data!
+> *"What are the main topics covered in the documents?"*
+>
+> *"Summarize the key points from the travel brochures."*
+>
+> *"What destinations are mentioned?"*
+
+---
 
 ## Project Structure
 
 ```
 azure-ai-rag-demo/
-├── README.md                    # This file
-├── deploy.sh                    # Bicep deployment script
-├── setup-data.sh                # Data upload & index creation script
-├── cleanup-resources.sh         # Script to delete all resources
-├── data/                        # Your PDF/document files
-├── infra/                       # Infrastructure as Code (Bicep)
-│   ├── main.bicep               # Main Bicep template
-│   ├── main.bicepparam          # Parameter file
-│   └── modules/                 # Bicep modules
-│       ├── storage.bicep        # Storage Account
-│       ├── keyvault.bicep       # Key Vault
-│       ├── loganalytics.bicep   # Log Analytics
-│       ├── appinsights.bicep    # Application Insights
-│       ├── search.bicep         # Azure AI Search
-│       ├── openai.bicep         # Azure OpenAI
-│       ├── aihub.bicep          # Azure AI Hub
-│       └── aiproject.bicep      # Azure AI Project
-└── .env                         # Created after deployment (contains config)
+├── README.md                    # Documentation
+├── deploy.sh                    # Deployment automation
+├── setup-data.sh                # Data upload & indexing
+├── cleanup-resources.sh         # Resource cleanup
+├── data/                        # Your PDF documents
+├── infra/                       # Infrastructure as Code
+│   ├── main.bicep               # Main orchestration
+│   ├── main.bicepparam          # Parameters
+│   └── modules/                 # Modular Bicep templates
+│       ├── storage.bicep
+│       ├── keyvault.bicep
+│       ├── loganalytics.bicep
+│       ├── appinsights.bicep
+│       ├── search.bicep
+│       ├── openai.bicep
+│       ├── aihub.bicep
+│       └── aiproject.bicep
+└── .devcontainer/               # GitHub Codespaces config
 ```
+
+---
 
 ## Cleanup
 
-To delete all Azure resources when done:
+Delete all resources to avoid ongoing charges:
 
 ```bash
 az group delete --name $RESOURCE_GROUP --yes --no-wait
 ```
 
-Or use the cleanup script:
-
-```bash
-./cleanup-resources.sh
-```
-
-**Tip**: Delete the resource group after completing the demo to avoid ongoing charges.
-
+---
 
 ## Troubleshooting
 
-### Model Availability
-GPT-4o and text-embedding-ada-002 availability varies by region. The deployment uses `swedencentral` by default. You can override this in `main.bicepparam`:
+<details>
+<summary><strong>Model availability issues</strong></summary>
+
+GPT-4o and text-embedding-ada-002 availability varies by region. Change the location in `main.bicepparam`:
+
 ```bicep
 using './main.bicep'
 
-param location = 'eastus2'  // Alternative region
+param location = 'eastus2'  // Try alternative regions
 ```
 
-### Bicep Deployment Errors
-If deployment fails, check the Azure portal for detailed error messages:
+</details>
+
+<details>
+<summary><strong>Deployment errors</strong></summary>
+
+Check detailed error messages:
+
 ```bash
 az deployment group show \
     --name <deployment-name> \
-    --resource-group rg-ai-rag-demo \
+    --resource-group $RESOURCE_GROUP \
     --query properties.error
 ```
+
+</details>
+
+<details>
+<summary><strong>Index not showing in AI Foundry</strong></summary>
+
+1. Verify the indexer completed: Check Azure Portal → AI Search → Indexers
+2. Ensure the search connection exists in the AI Hub
+3. Refresh the Azure AI Foundry page
+
+</details>
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<p align="center">
+  <sub>Built with ❤️ for the Azure community</sub>
+</p>
