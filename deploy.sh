@@ -94,9 +94,7 @@ echo ""
 echo "Next Steps:"
 echo "1. Go to Azure AI Studio: https://ai.azure.com"
 echo "2. Select your project: $AI_PROJECT_NAME"
-echo "3. Upload your data files from sample-data/"
-echo "4. Create a vector index using your data"
-echo "5. Use the playground to test RAG with your data"
+echo "3. Go to Playground > Chat and add your data"
 echo ""
 echo "To delete all resources when done:"
 echo "  az group delete --name $RESOURCE_GROUP --yes --no-wait"
@@ -119,3 +117,15 @@ STORAGE_NAME=$STORAGE_NAME
 EOF
 
 echo "Configuration saved to .env file"
+
+# Ask if user wants to upload data and create index
+echo ""
+read -p "Do you want to upload data and create the search index now? (y/n): " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if [ -f "./setup-data.sh" ]; then
+        ./setup-data.sh
+    else
+        echo "setup-data.sh not found. Run it manually after deployment."
+    fi
+fi

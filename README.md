@@ -108,7 +108,20 @@ The deployment creates the following Azure resources:
 
 ## Using the Demo
 
-### Upload Your Data
+### Option 1: Automated Data Upload & Index Creation
+
+After deployment, run the data setup script to automatically:
+- Upload PDF files from the `data/` folder to Azure Storage
+- Create a vector search index with embeddings
+- Configure and run the indexer
+
+```bash
+./setup-data.sh
+```
+
+The deploy script will prompt you to run this automatically after infrastructure deployment.
+
+### Option 2: Manual Setup via Azure AI Studio
 
 1. Go to [Azure AI Studio](https://ai.azure.com)
 2. Select your project
@@ -121,7 +134,7 @@ The deployment creates the following Azure resources:
 
 1. In Azure AI Studio, go to **Playground** > **Chat**
 2. Click **Add your data**
-3. Select your index
+3. Select your index: `rag-index`
 4. Start asking questions about your data!
 
 ## Project Structure
@@ -130,7 +143,9 @@ The deployment creates the following Azure resources:
 azure-ai-rag-demo/
 ├── README.md                    # This file
 ├── deploy.sh                    # Bicep deployment script
+├── setup-data.sh                # Data upload & index creation script
 ├── cleanup-resources.sh         # Script to delete all resources
+├── data/                        # Your PDF/document files
 ├── infra/                       # Infrastructure as Code (Bicep)
 │   ├── main.bicep               # Main Bicep template
 │   ├── main.bicepparam          # Parameter file
