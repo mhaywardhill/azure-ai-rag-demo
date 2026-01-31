@@ -91,16 +91,17 @@ echo "Step 4: Creating search index..."
 INDEX_NAME="rag-index"
 
 # Create index schema
+# Note: For index projections, the key field must use keyword analyzer and be searchable
 cat > /tmp/index-schema.json << 'EOF'
 {
   "name": "rag-index",
   "fields": [
-    {"name": "id", "type": "Edm.String", "key": true, "searchable": false, "filterable": true},
+    {"name": "chunk_id", "type": "Edm.String", "key": true, "searchable": true, "filterable": true, "analyzer": "keyword"},
+    {"name": "parent_id", "type": "Edm.String", "searchable": false, "filterable": true},
     {"name": "content", "type": "Edm.String", "searchable": true, "filterable": false, "sortable": false, "facetable": false, "analyzer": "standard.lucene"},
     {"name": "title", "type": "Edm.String", "searchable": true, "filterable": true, "sortable": true, "facetable": false},
     {"name": "filepath", "type": "Edm.String", "searchable": false, "filterable": true, "sortable": false, "facetable": false},
     {"name": "url", "type": "Edm.String", "searchable": false, "filterable": false, "sortable": false, "facetable": false},
-    {"name": "chunk_id", "type": "Edm.String", "searchable": false, "filterable": true, "sortable": false, "facetable": false},
     {"name": "content_vector", "type": "Collection(Edm.Single)", "searchable": true, "dimensions": 1536, "vectorSearchProfile": "vector-profile"}
   ],
   "vectorSearch": {
@@ -128,7 +129,7 @@ cat > /tmp/index-schema.json << 'EOF'
       {
         "name": "semantic-config",
         "prioritizedFields": {
-          "contentFields": [{"fieldName": "content"}],
+          "prioritizedContentFields": [{"fieldName": "content"}],
           "titleField": {"fieldName": "title"}
         }
       }
@@ -214,20 +215,19 @@ cat > /tmp/skillset.json << EOF
     "selectors": [
       {
         "targetIndexName": "${INDEX_NAME}",
-        "parentKeyFieldName": "id",
+        "parentKeyFieldName": "parent_id",
         "sourceContext": "/document/chunks/*",
         "mappings": [
           {"name": "content", "source": "/document/chunks/*"},
           {"name": "content_vector", "source": "/document/chunks/*/content_vector"},
           {"name": "title", "source": "/document/metadata_storage_name"},
           {"name": "filepath", "source": "/document/metadata_storage_path"},
-          {"name": "url", "source": "/document/metadata_storage_path"},
-          {"name": "chunk_id", "source": "/document/chunks/*"}
+          {"name": "url", "source": "/document/metadata_storage_path"}
         ]
       }
     ],
     "parameters": {
-      "projectionMode": "generatedKeyAsId"
+      "projectionMode": "skipIndexingParentDocuments"
     }
   }
 }
@@ -257,7 +257,7 @@ cat > /tmp/indexer.json << EOF
     }
   },
   "fieldMappings": [
-    {"sourceFieldName": "metadata_storage_path", "targetFieldName": "id", "mappingFunction": {"name": "base64Encode"}}
+    {"sourceFieldName": "metadata_storage_path", "targetFieldName": "parent_id", "mappingFunction": {"name": "base64Encode"}}
   ]
 }
 EOF
@@ -273,7 +273,8 @@ echo "✓ Indexer created"
 echo ""
 echo "Step 8: Running indexer..."
 curl -s -X POST "${SEARCH_ENDPOINT}/indexers/document-indexer/run?api-version=2024-07-01" \
-    -H "api-key: ${SEARCH_KEY}" > /dev/null
+    -H "api-key: ${SEARCH_KEY}" \
+    -H "Content-Length: 0" > /dev/null
 
 echo "✓ Indexer started"
 
