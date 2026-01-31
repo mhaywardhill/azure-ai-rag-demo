@@ -57,12 +57,18 @@ export LOCATION="swedencentral"
 # Create resource group
 az group create --name $RESOURCE_GROUP --location $LOCATION
 
+# Get your user principal ID for role assignment
+PRINCIPAL_ID=$(az ad signed-in-user show --query id -o tsv)
+
 # Deploy all Azure resources
 az deployment group create \
     --resource-group $RESOURCE_GROUP \
     --template-file infra/main.bicep \
-    --parameters infra/main.bicepparam
+    --parameters infra/main.bicepparam \
+    --parameters principalId=$PRINCIPAL_ID
 ```
+
+> **💡 Note:** The `principalId` parameter grants your user the **Cognitive Services OpenAI User** role, required to run the Python chat app.
 
 ### 5. Upload Data and Create Index
 
@@ -131,6 +137,45 @@ The deployment creates the following Azure resources:
 >
 > *"What destinations are mentioned?"*
 
+### Run the Python Chat App
+
+You can also run a local Python chat application that connects to your deployed Azure AI resources.
+
+#### 1. Create Python Environment
+
+```bash
+cd chat-app
+python3 -m venv labenv
+source labenv/bin/activate
+```
+
+#### 2. Install Dependencies
+
+Use the Makefile to install all required packages:
+
+```bash
+make install
+```
+
+#### 3. Set Environment Variables
+
+Create a `.env` file in the `chat-app` directory with your Azure AI project settings:
+
+```bash
+PROJECT_ENDPOINT=https://<your-ai-project>.cognitiveservices.azure.com/
+MODEL_DEPLOYMENT=gpt-4o
+```
+
+> **💡 Tip:** Find your project endpoint in Azure AI Foundry under your project's **Overview** page.
+
+#### 4. Run the Chat App
+
+```bash
+python chat-app.py
+```
+
+Type your questions at the prompt and type `quit` to exit.
+
 ---
 
 ## Project Structure
@@ -142,6 +187,11 @@ azure-ai-rag-demo/
 ├── setup-data.sh                # Data upload & indexing
 ├── cleanup-resources.sh         # Resource cleanup
 ├── data/                        # Your PDF documents
+├── chat-app/                    # Python chat application
+│   ├── chat-app.py              # Main chat application
+│   ├── requirements.txt         # Python dependencies
+│   ├── Makefile                 # Build automation
+│   └── .env                     # Environment variables (configure)
 ├── infra/                       # Infrastructure as Code
 │   ├── main.bicep               # Main orchestration
 │   ├── main.bicepparam          # Parameters

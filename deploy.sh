@@ -30,7 +30,11 @@ fi
 
 SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 SUBSCRIPTION_NAME=$(az account show --query name -o tsv)
+PRINCIPAL_ID=$(az ad signed-in-user show --query id -o tsv 2>/dev/null || echo "")
 echo "Using subscription: $SUBSCRIPTION_NAME ($SUBSCRIPTION_ID)"
+if [ -n "$PRINCIPAL_ID" ]; then
+    echo "User Principal ID: $PRINCIPAL_ID (will be granted OpenAI access)"
+fi
 echo ""
 
 # Prompt for confirmation
@@ -59,6 +63,7 @@ DEPLOYMENT_OUTPUT=$(az deployment group create \
     --resource-group $RESOURCE_GROUP \
     --template-file infra/main.bicep \
     --parameters infra/main.bicepparam \
+    --parameters principalId="$PRINCIPAL_ID" \
     --query properties.outputs \
     --output json)
 

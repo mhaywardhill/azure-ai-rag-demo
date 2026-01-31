@@ -49,6 +49,9 @@ param embeddingModelName string = 'text-embedding-ada-002'
 @description('Embedding model version')
 param embeddingModelVersion string = '2'
 
+@description('Principal ID of the user to grant OpenAI access (leave empty to skip role assignment)')
+param principalId string = ''
+
 // Storage Account
 module storage 'modules/storage.bicep' = {
   name: 'storage-deployment'
@@ -106,6 +109,7 @@ module openAi 'modules/openai.bicep' = {
     gptModelVersion: gptModelVersion
     embeddingModelName: embeddingModelName
     embeddingModelVersion: embeddingModelVersion
+    principalId: principalId
   }
 }
 
