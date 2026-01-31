@@ -43,7 +43,7 @@ resource gptDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-10
   name: gptModelName
   sku: {
     name: 'Standard'
-    capacity: 1
+    capacity: 30
   }
   properties: {
     model: {

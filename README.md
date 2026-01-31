@@ -176,6 +176,56 @@ python chat-app.py
 
 Type your questions at the prompt and type `quit` to exit.
 
+### Run the RAG App (with Azure AI Search)
+
+The RAG app demonstrates Retrieval-Augmented Generation using Azure OpenAI with Azure AI Search as a data source.
+
+#### 1. Create Python Environment
+
+```bash
+cd rag-app
+python3 -m venv labenv
+source labenv/bin/activate
+```
+
+#### 2. Install Dependencies
+
+```bash
+make install
+```
+
+#### 3. Set Environment Variables
+
+Create a `.env` file in the `rag-app` directory or export the variables:
+
+```bash
+export OPEN_AI_ENDPOINT="https://<your-openai-resource>.openai.azure.com/"
+export OPEN_AI_KEY="<your-openai-api-key>"
+export CHAT_MODEL="gpt-4o"
+export EMBEDDING_MODEL="text-embedding-ada-002"
+export SEARCH_ENDPOINT="https://<your-search-service>.search.windows.net"
+export SEARCH_KEY="<your-search-admin-key>"
+export INDEX_NAME="rag-index"
+```
+
+> **💡 Tip:** Get these values from your Azure portal or use Azure CLI:
+> ```bash
+> # OpenAI endpoint and key
+> az cognitiveservices account show --name <openai-name> --resource-group <rg> --query "properties.endpoint" -o tsv
+> az cognitiveservices account keys list --name <openai-name> --resource-group <rg> --query "key1" -o tsv
+> 
+> # Search key
+> az search admin-key show --service-name <search-name> --resource-group <rg> --query "primaryKey" -o tsv
+> ```
+
+#### 4. Run the RAG App
+
+```bash
+python rag-app.py
+```
+
+Type your questions about the indexed documents and type `quit` to exit.
+
 ---
 
 ## Project Structure
@@ -187,8 +237,13 @@ azure-ai-rag-demo/
 ├── setup-data.sh                # Data upload & indexing
 ├── cleanup-resources.sh         # Resource cleanup
 ├── data/                        # Your PDF documents
-├── chat-app/                    # Python chat application
+├── chat-app/                    # Python chat application (AI Foundry SDK)
 │   ├── chat-app.py              # Main chat application
+│   ├── requirements.txt         # Python dependencies
+│   ├── Makefile                 # Build automation
+│   └── .env                     # Environment variables (configure)
+├── rag-app/                     # RAG application (Azure OpenAI + AI Search)
+│   ├── rag-app.py               # RAG chat application
 │   ├── requirements.txt         # Python dependencies
 │   ├── Makefile                 # Build automation
 │   └── .env                     # Environment variables (configure)

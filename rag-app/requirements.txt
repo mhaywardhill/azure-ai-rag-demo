@@ -1,0 +1,13 @@
+# Azure SDK
+azure-identity==1.25.1
+azure-ai-projects==1.0.0
+
+# OpenAI
+openai==2.16.0
+
+# Environment
+python-dotenv==1.2.1
+
+# Development Tools
+ruff==0.14.14
+mypy==1.19.1
